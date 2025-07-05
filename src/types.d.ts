@@ -21,6 +21,7 @@ export interface Product {
   meta: Meta
   images: string[]
   thumbnail: string
+  quantity?: number
 }
 
 export interface Dimensions {
@@ -48,3 +49,5 @@ export interface Filters {
   price: number
   category: string
 }
+
+export type CartProduct = Product & { quantity: number }

@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { CartIcon } from './components/Icons'
+import { CartIcon, ClearCartIcon, RemoveFromCartIcon } from './components/Icons'
 import { products } from './mocks/products.json'
 import { filterProducts } from './helpers/filterProducts'
+import type { CartProduct } from './types'
 
 function App() {
   const [filters, setFilters] = useState({
     price: 0,
     category: 'all',
   })
+  const [cart, setCart] = useState<CartProduct[]>([])
 
   const handleFilter = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -19,6 +21,38 @@ function App() {
   }
 
   const filteredProducts = filterProducts(products, filters)
+
+  const onAddToCart = (id: number) => {
+    const cartItemIndex = cart.findIndex((prod) => prod.id === id)
+
+    if (cartItemIndex >= 0) {
+      // const newCart = cart.map((prod) =>
+      //   prod.id === id ? { ...prod, quantity: prod.quantity! + 1 } : prod
+      // )
+
+      const item = cart[cartItemIndex]
+      const newCart = [
+        ...cart.slice(0, cartItemIndex),
+        { ...item, quantity: (item.quantity ?? 0) + 1 },
+        ...cart.slice(cartItemIndex + 1),
+      ]
+
+      setCart(newCart)
+    } else {
+      const productToAdd = products.find((prod) => prod.id === id)
+      if (!productToAdd) return
+
+      setCart([...cart, { ...productToAdd, quantity: 1 }])
+    }
+  }
+
+  const onClearCart = () => {
+    setCart([])
+  }
+
+  const onRemoveToCart = (id: number) => {
+    setCart((prev) => prev.filter((prev) => prev.id !== id))
+  }
 
   return (
     <div className='bg-slate-800 min-h-screen text-gray-100'>
@@ -68,22 +102,62 @@ function App() {
                 <h3 className='overflow-hidden text-nowrap text-ellipsis'>{product.title}</h3>
                 <span>${product.price}</span>
               </div>
-              <button className='bg-blue-700 p-2 rounded-lg font-semibold flex gap-3 justify-center cursor-pointer'>
-                Add to cart <CartIcon />
-              </button>
+              {cart.find((prod) => prod.id === product.id) ? (
+                <button
+                  className='bg-red-700 p-2 rounded-lg font-semibold flex gap-3 justify-center cursor-pointer'
+                  onClick={() => onRemoveToCart(product.id)}
+                >
+                  Remove to cart <RemoveFromCartIcon />
+                </button>
+              ) : (
+                <button
+                  className='bg-blue-700 p-2 rounded-lg font-semibold flex gap-3 justify-center cursor-pointer'
+                  onClick={() => onAddToCart(product.id)}
+                >
+                  Add to cart <CartIcon />
+                </button>
+              )}
             </article>
           ))}
         </main>
         <>
           <label
             htmlFor='btnCart'
-            className='peer fixed top-2 right-2 z-50 bg-blue-500 p-3 rounded-full cursor-pointer'
+            className='peer fixed top-2 right-4 z-50 bg-blue-500 p-3 rounded-full cursor-pointer'
           >
             <CartIcon />
             <input type='checkbox' id='btnCart' className='hidden peer' />
           </label>
-          <aside className='hidden fixed min-w-80 bg-slate-800 right-0 top-0 bottom-0 peer-has-checked:block z-40'></aside>
           <div className='hidden peer-has-checked:block fixed inset-0 bg-black/60'></div>
+          <aside className='hidden fixed w-80 bg-slate-800 right-0 top-0 bottom-0 peer-has-checked:block z-40 overflow-y-auto'>
+            <ul className='p-5 flex flex-col gap-4'>
+              {cart.map((item) => (
+                <li
+                  key={item.id}
+                  className='flex flex-col items-center border-b-1 pb-2 last:border-none gap-2'
+                >
+                  <img src={item.thumbnail} alt={item.title} className='w-30' />
+                  <div className='text-center'>
+                    <strong>{item.title}</strong> - ${item.price}
+                  </div>
+                  <footer>
+                    <small>Qty: {item.quantity}</small>
+                    <button
+                      className='bg-slate-700 px-3 rounded-lg py-1 ml-2 cursor-pointer font-semibold'
+                      onClick={() => onAddToCart(item.id)}
+                    >
+                      +
+                    </button>
+                  </footer>
+                </li>
+              ))}
+            </ul>
+            <div className='flex justify-center my-10'>
+              <button className='bg-slate-700 p-3 rounded-lg cursor-pointer' onClick={onClearCart}>
+                <ClearCartIcon />
+              </button>
+            </div>
+          </aside>
         </>
       </div>
     </div>
